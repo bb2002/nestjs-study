@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import Mail = require('nodemailer/lib/mailer');
 import * as nodemailer from 'nodemailer';
+import emailConfig from '../config/email.config';
+import { ConfigType } from '@nestjs/config';
 
 interface EmailOptions {
   to: string;
@@ -12,12 +14,14 @@ interface EmailOptions {
 export class EmailService {
   private transporter: Mail;
 
-  constructor() {
+  constructor(
+    @Inject(emailConfig.KEY) private config: ConfigType<typeof emailConfig>,
+  ) {
     this.transporter = nodemailer.createTransport({
-      service: 'Gmail',
+      service: config.service,
       auth: {
-        user: 'taxpackcmi@gmail.com',
-        pass: 'ballbot!$@#523',
+        user: config.auth.user,
+        pass: config.auth.pass,
       },
     });
   }
@@ -29,7 +33,7 @@ export class EmailService {
     const baseUrl = 'http://localhost:3000'; // TODO: config
 
     const url = `${baseUrl}/users/email-verify?signupVerifyToken=${signupVerifyToken}`;
-    console.log('가입 토큰: ', url);
+    console.log('[메일왔다고가정] 가입 토큰: ', url);
 
     const mailOptions: EmailOptions = {
       to: emailAddress,
@@ -41,7 +45,6 @@ export class EmailService {
         </form>
       `,
     };
-
-    return await this.transporter.sendMail(mailOptions);
+    // return await this.transporter.sendMail(mailOptions);
   }
 }
