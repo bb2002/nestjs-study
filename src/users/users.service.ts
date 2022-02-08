@@ -3,10 +3,17 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { EmailService } from '../email/email.service';
 import * as uuid from 'uuid';
 import { UserInfo } from './UserInfo';
+import { InjectRepository } from '@nestjs/typeorm';
+import { UserEntity } from './entities/user.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly emailService: EmailService) {}
+  constructor(
+    private readonly emailService: EmailService,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
+  ) {}
 
   async createUser(name: string, email: string, password: string) {
     await this.checkUserExits(email);
@@ -40,17 +47,23 @@ export class UsersService {
     throw new Error('Method not implemented.');
   }
 
-  private checkUserExits(email: string) {
-    return false; // DB 학습 후에 구현
+  private async checkUserExits(email: string) {
+    const user = await this.userRepository.findOne({ email });
+    return user !== undefined;
   }
 
-  private saveUser(
+  private async saveUser(
     name: string,
     email: string,
     password: string,
     signupVerifyToken: string,
   ) {
-    return; // DB 학습 후에 구현
+    const user = new UserEntity();
+    user.name = name;
+    user.email = email;
+    user.password = password;
+    user.signupVerifyToken = signupVerifyToken;
+    await this.userRepository.save(user);
   }
 
   private async sendMemberJoinEmail(email: string, signupVerifyToken: string) {
@@ -59,5 +72,4 @@ export class UsersService {
       signupVerifyToken,
     );
   }
-
 }
