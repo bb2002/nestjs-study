@@ -6,5 +6,10 @@
   "password": "ballbot3451",
   "database": "neststudy",
   "entities": ["dist/**/*.entity{.ts,.js}"],
-  "synchronize": false
+  "synchronize": false,
+  "migrations": ["dist/migrations/*{.ts,.js}"],
+  "cli": {
+    "migrationsDir": "src/migrations"
+  },
+  "migrationsTableName": "migrations"
 }

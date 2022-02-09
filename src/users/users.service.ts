@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { EmailService } from '../email/email.service';
 import * as uuid from 'uuid';
 import { UserInfo } from './UserInfo';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { Connection, Repository } from 'typeorm';
 
 @Injectable()
 export class UsersService {
@@ -13,10 +13,14 @@ export class UsersService {
     private readonly emailService: EmailService,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    private readonly connection: Connection,
   ) {}
 
   async createUser(name: string, email: string, password: string) {
-    await this.checkUserExits(email);
+    const userExist = await this.checkUserExits(email);
+    if (userExist) {
+      throw new UnprocessableEntityException('이미 가입된 계정입니다.');
+    }
 
     const signupVerifyToken = uuid.v1();
 
@@ -64,6 +68,32 @@ export class UsersService {
     user.password = password;
     user.signupVerifyToken = signupVerifyToken;
     await this.userRepository.save(user);
+  }
+
+  private async saveUserUsingQueryRunner(
+    name: string,
+    email: string,
+    password: string,
+    signupVerifyToken: string,
+  ) {
+    const queryRunner = this.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const user = new UserEntity();
+      user.name = name;
+      user.email = email;
+      user.password = password;
+      user.signupVerifyToken = signupVerifyToken;
+
+      await queryRunner.manager.save(user);
+      await queryRunner.commitTransaction();
+    } catch (ex) {
+      await queryRunner.rollbackTransaction();
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   private async sendMemberJoinEmail(email: string, signupVerifyToken: string) {
