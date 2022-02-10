@@ -9,6 +9,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { Logger2Middleware } from './middleware/logger2.middleware';
 import { UsersController } from './users/users.controller';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { UsersController } from './users/users.controller';
       validationSchema,
     }),
     TypeOrmModule.forRoot(),
+    AuthModule,
   ],
   controllers: [],
   providers: [],
